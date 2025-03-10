@@ -7,33 +7,102 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}Starting i3 setup process...${NC}"
 
-# Create necessary directories
-mkdir -p ~/.config/{i3,picom}
-mkdir -p ~/Pictures
+# Function to handle errors
+handle_error() {
+    echo -e "\033[0;31mError: $1\033[0m"
+    echo -e "\033[0;33mPlease check the error message above and try to resolve the issue.\033[0m"
+}
 
-# Install required packages
-echo -e "${BLUE}Installing required packages...${NC}"
-if command -v pacman &> /dev/null; then
-    # For Arch-based systems
-    sudo pacman -S --noconfirm i3-gaps i3lock i3status \
-        picom rofi feh kitty flameshot \
-        network-manager-applet xss-lock \
-        pulseaudio-utils pango ttf-inconsolata \
-        git python python-pip
-elif command -v apt-get &> /dev/null; then
-    # For Debian-based systems
-    sudo apt-get update
-    sudo apt-get install -y i3-gaps i3lock i3status \
-        picom rofi feh kitty flameshot \
-        network-manager-gnome xss-lock \
-        pulseaudio fonts-inconsolata \
-        git python3 python3-pip
+# Function to install packages
+install_package() {
+    local package=$1
+    echo -e "${BLUE}Installing $package...${NC}"
+    
+    if command -v apt-get &> /dev/null; then
+        if ! sudo apt-get install -y "$package"; then
+            handle_error "Failed to install $package"
+            return 1
+        fi
+    elif command -v pacman &> /dev/null; then
+        if ! sudo pacman -S --noconfirm "$package"; then
+            handle_error "Failed to install $package"
+            return 1
+        fi
+    else
+        handle_error "No supported package manager found (apt-get or pacman)"
+        exit 1
+    fi
+    return 0
+}
+
+# Update package lists first
+echo -e "${BLUE}Updating package lists...${NC}"
+if command -v apt-get &> /dev/null; then
+    sudo apt-get update || handle_error "Failed to update package lists"
+elif command -v pacman &> /dev/null; then
+    sudo pacman -Sy || handle_error "Failed to update package lists"
 fi
+
+# Required packages arrays - adjusted for apt names
+PACKAGES=(
+    "i3"  # Changed from i3-gaps as it's typically included in i3 on Ubuntu/Debian
+    "i3lock"
+    "i3status"
+    "picom"
+    "rofi"
+    "feh"
+    "kitty"
+    "flameshot"
+    "git"
+    "python3"
+    "python3-pip"
+    "imagemagick"
+)
+
+# Install packages one by one with error handling
+echo -e "${BLUE}Installing required packages...${NC}"
+FAILED_PACKAGES=()
+for package in "${PACKAGES[@]}"; do
+    if ! install_package "$package"; then
+        FAILED_PACKAGES+=("$package")
+    fi
+done
+
+# Report failed installations if any
+if [ ${#FAILED_PACKAGES[@]} -ne 0 ]; then
+    echo -e "\033[0;31mThe following packages failed to install:\033[0m"
+    printf '%s\n' "${FAILED_PACKAGES[@]}"
+    echo -e "\033[0;33mYou may need to install them manually or resolve any conflicts.\033[0m"
+fi
+
+# Additional system-specific packages
+if command -v apt-get &> /dev/null; then
+    ADDITIONAL_PACKAGES=(
+        "network-manager-gnome"
+        "xss-lock"
+        "pulseaudio"
+        "fonts-inconsolata"
+    )
+else
+    ADDITIONAL_PACKAGES=(
+        "network-manager-applet"
+        "xss-lock"
+        "pulseaudio-utils"
+        "pango"
+        "ttf-inconsolata"
+    )
+fi
+
+# Install additional packages
+for package in "${ADDITIONAL_PACKAGES[@]}"; do
+    if ! install_package "$package"; then
+        FAILED_PACKAGES+=("$package")
+    fi
+done
 
 # Clone and setup bumblebee-status
 echo -e "${BLUE}Setting up bumblebee-status...${NC}"
 git clone https://github.com/tobi-wan-kenobi/bumblebee-status.git ~/.config/bumblebee-status-main
-pip install --user bumblebee-status
 
 # Copy i3 config
 echo -e "${BLUE}Copying i3 config...${NC}"
