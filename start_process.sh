@@ -138,6 +138,15 @@ if [ ! -f ~/Pictures/output.png ]; then
     convert ~/Pictures/main.jpg -blur 0x8 ~/Pictures/output.png
 fi
 
+# Copy wallpaper and lock screen images
+echo -e "${BLUE}Setting up wallpaper and lock screen...${NC}"
+if [ -f ./main.jpg ]; then
+    cp ./main.jpg ~/Pictures/main.jpg || handle_error "Failed to copy wallpaper"
+fi
+if [ -f ./output.png ]; then
+    cp ./output.png ~/Pictures/output.png || handle_error "Failed to copy lock screen image"
+fi
+
 # Set correct permissions
 chmod +x ~/.config/i3/config
 
