@@ -150,9 +150,20 @@ fi
 # Set correct permissions
 chmod +x ~/.config/i3/config
 
-echo -e "${GREEN}Setup completed! Please log out and log back in with i3 to see the changes.${NC}"
+echo -e "${GREEN}Configuration files have been copied successfully!${NC}"
 echo -e "${GREEN}Note: You might need to manually configure some aspects of your system.${NC}"
 echo -e "${GREEN}Additional steps you might want to take:${NC}"
 echo "1. Customize your wallpaper by replacing ~/Pictures/main.jpg"
 echo "2. Adjust picom configuration in ~/.config/picom/picom.conf"
-echo "3. Modify i3 config to your liking in ~/.config/i3/config" 
+echo "3. Modify i3 config to your liking in ~/.config/i3/config"
+
+# Ask for logout confirmation
+echo -e "\n${BLUE}Would you like to log out now to apply the changes? (y/N)${NC}"
+read -r response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    echo -e "${GREEN}Logging out in 5 seconds...${NC}"
+    sleep 5
+    pkill -KILL -u "$USER"
+else
+    echo -e "${BLUE}OK, remember to log out manually to apply the changes.${NC}"
+fi 
